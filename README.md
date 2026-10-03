@@ -19,6 +19,16 @@ It's a single static page (`index.html`) with no build step, served by GitHub Pa
 
   The EVO extension has no High/Low setting.
 - **Everything else is calculated.** Chip and fork changes tip the whole frame, so reach, stack and seat angle rotate with it. A longer fork tilts the frame back about 0.4° per 10 mm of axle-to-crown. Run with the EVO link and a 597 mm fork, the model reproduces Specialized's published EVO chart within 1.3 mm and 0.2°.
+- **Forks:** pick a Fox 36 (2023–27, incl. E-Optimized), Fox 38 (2021–26 or 2027), RockShox ZEB, or Custom. Axle-to-crown comes from the makers' spec sheets, and travel is limited to what each fork comes in:
+
+  | Fork (29") | 140 | 150 | 160 | 170 | 180 | 190 |
+  |---|---|---|---|---|---|---|
+  | Fox 36 (2023–27) | 556.0 | 566.0 | 576.0 | | | |
+  | Fox 38 (2021–26) | | 563.7 | 573.7 | 583.7 | 593.7 | |
+  | Fox 38 (2027) | | | 578.6 | 588.6 | 598.6 | |
+  | RockShox ZEB | | 566 | 576 | 586 | 596 | 606 |
+
+  Specialized's charts use one nominal length (577 mm at 160, 597 mm at 180) for every trim; the stock comparisons use that. Custom takes any A2C and offset.
 - **Headset cup and reach:** reach doesn't change. The cup tips the frame slightly, which moves the head tube back about 3 mm on a +1° cup, but the steerer leans about 2 mm forward, so the stem lands within a millimeter of where it was. Stack (+2 mm) and seat angle (−0.25°) do change on a +1° cup and are included.
 - Wheelbase and front center for chip and cup changes are estimates; the manual lists chainstay changes but not wheelbase.
 

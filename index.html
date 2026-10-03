@@ -51,6 +51,8 @@ h1{font:700 1.9rem/1.1 var(--f-display);margin:0;letter-spacing:.01em;text-wrap:
 .field{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
 .field input,.field select{flex:1;min-width:0;background:transparent;border:0;color:var(--ink);font:500 .95rem var(--f-mono);padding:4px 0}
 .field input:focus,.field select:focus{outline:none}
+.field input[readonly]{color:var(--muted);cursor:default}
+#fmodel{font-family:var(--f-body)}
 .field:focus-within{border-color:var(--accent)}
 .field span{color:var(--muted);font:.8rem var(--f-mono)}
 .hint{font-size:.8rem;color:var(--muted);margin:0}
@@ -141,11 +143,13 @@ td.d{font-size:.82rem}
         <p class="hint">Changes head angle ±1° and BB ±2 mm, plus a small stack and seat-angle change. Reach stays the same at the stem; the notes explain why.</p>
       </div>
       <div class="ctl">
-        <div class="lbl">Fork travel</div>
+        <div class="lbl"><label for="fmodel">Fork</label></div>
+        <label class="field"><select id="fmodel"></select></label>
+        <div class="lbl">Travel <em id="travelAvail"></em></div>
         <div class="seg" id="fork"></div>
         <div class="row2">
-          <label class="field" for="a2c" title="Axle-to-crown length"><span>A2C</span><input id="a2c" type="number" inputmode="numeric" step="1" min="520" max="640"><span>mm</span></label>
-          <label class="field" for="offset"><span>Offset</span><select id="offset"><option>37</option><option>38</option><option>42</option><option selected>44</option></select><span>mm</span></label>
+          <label class="field" for="a2c" title="Axle-to-crown length"><span>A2C</span><input id="a2c" type="number" inputmode="decimal" step="0.1" min="500" max="650"><span>mm</span></label>
+          <label class="field" for="offset"><span>Offset</span><select id="offset"></select><input id="offsetCustom" type="number" inputmode="decimal" step="1" min="30" max="60" hidden><span>mm</span></label>
         </div>
         <p class="hint" id="a2cHint"></p>
         <p class="warn" id="forkWarn" hidden></p>
@@ -181,6 +185,11 @@ td.d{font-size:.82rem}
         <dd>A longer fork tips the whole frame back about 0.4° per 10 mm of axle-to-crown, so reach, stack and seat angle rotate with it. With the EVO link and a 597 mm fork, this reproduces Specialized's EVO chart within about 1 mm.</dd>
       </div>
       <div>
+        <dt>Forks</dt>
+        <dd>Axle-to-crown comes from each maker's spec sheet: Fox 36 (2023–27), Fox 38 (2021–26 and 2027), and RockShox ZEB. Travel is limited to what each fork comes in. The same travel isn't the same height: at 160 mm the 2021–26 38 is 573.7 mm and the 2027 38 is 578.6 mm.</dd>
+        <dd>Specialized's charts use one nominal length, 577 mm at 160 and 597 mm at 180, for every trim. The stock comparisons use that. Pick Custom to enter any fork's A2C and offset.</dd>
+      </div>
+      <div>
         <dt>Headset cup and reach</dt>
         <dd>Reach doesn't change. The cup tips the frame slightly, which moves the head tube back about 3 mm on a +1° cup, but the steerer leans about 2 mm forward, so the stem barely moves.</dd>
         <dd>Stack and seat angle do change: about +2 mm and −0.25° on a +1° cup, the reverse on −1°.</dd>
@@ -213,7 +222,22 @@ const EVO={
  trail:[null,139,139,139,139,139], a2c:[null,597,597,597,597,597], fc:[null,773,797,828,859,897],
  cs:[null,435,435,435,435,435], wb:[null,1208,1232,1263,1294,1331], sth:[null,764,765,763,768,771],
  st:[null,390,405,425,445,465], sta:[null,76,76,76,76,76], tt:[null,580,602,630,658,691], fork:[null,180,180,180,180,180]};
-const STOCK_SET={levo:{ext:"low",horst:"short",cup:0,fork:160,offset:44},evo:{ext:"evo",horst:"short",cup:0,fork:180,offset:44}};
+// Fork axle-to-crown (A2C), 29", by travel. Sources: Fox user spec sheets (tech.ridefox.com), SRAM 2022 front suspension specifications.
+// "spec" is Specialized's nominal chart value (577 at 160, 597 at 180), used for the stock baselines.
+const FORKS={
+ spec:{name:"Specialized chart (nominal)",short:"Spec chart fork",a2c:{150:567,160:577,170:587,180:597,190:607},offsets:[44],
+   note:"The nominal fork length Specialized's geometry charts use for every trim: 577 mm at 160, 597 mm at 180."},
+ fox36:{name:"Fox 36 (2023–27, incl. E-Optimized)",short:"Fox 36",a2c:{140:556,150:566,160:576},offsets:[44,51],
+   note:"Fox spec sheet. Available in 140–160 mm; the E-Optimized version has the same A2C."},
+ fox38a:{name:"Fox 38 (2021–26)",short:"Fox 38 '21–26",a2c:{150:563.7,160:573.7,170:583.7,180:593.7},offsets:[44],
+   note:"Fox spec sheet, 2021–26 38 and 38 E-Bike+."},
+ fox38b:{name:"Fox 38 (2027)",short:"Fox 38 '27",a2c:{160:578.6,170:588.6,180:598.6},offsets:[44],
+   note:"Fox spec sheet, MY27 38. About 5 mm taller than the 2021–26 38 at the same travel."},
+ zeb:{name:"RockShox ZEB",short:"ZEB",a2c:{150:566,160:576,170:586,180:596,190:606},offsets:[44,51],
+   note:"SRAM spec sheet, ZEB 29 (Ultimate, Select+, Select)."},
+ custom:{name:"Custom: enter A2C and offset",short:"Custom fork",a2c:{140:null,150:null,160:null,170:null,180:null,190:null},offsets:[],
+   note:"Enter your fork's axle-to-crown and offset. Travel is for your reference; the A2C you enter drives the geometry."}};
+const STOCK_SET={levo:{ext:"low",horst:"short",cup:0,fork:160,offset:44,fmodel:"spec"},evo:{ext:"evo",horst:"short",cup:0,fork:180,offset:44,fmodel:"spec"}};
 const DEF={model:"levo",size:"S4",...STOCK_SET.levo};
 const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
 
@@ -229,17 +253,38 @@ seg("size","size",SIZES.map(s=>[s,s]),DEF.size);
 seg("ext","ext",[["low","Standard · Low"],["high","Standard · High"],["evo","EVO 230×62.5"]],DEF.ext);
 seg("horst","horst",[["short","Short"],["long","Long"]],DEF.horst);
 seg("cup","cup",[[-1,"−1° slack"],[0,"0° neutral"],[1,"+1° steep"]],DEF.cup);
-seg("fork","fork",[150,160,170,180,190].map(f=>[f,f]),DEF.fork);
+
 
 const $=id=>document.getElementById(id);
 const val=n=>document.querySelector(`input[name="${n}"]:checked`).value;
-let a2cManual=false;
+let lastA2C=577, lastOffset=44;
+$("fmodel").innerHTML=Object.entries(FORKS).map(([k,f])=>`<option value="${k}">${f.name}</option>`).join("");
+$("fmodel").value=DEF.fmodel;
+function forkTravels(m){return Object.keys(FORKS[m].a2c).map(Number)}
+function buildForkControls(keepTravel){
+  const m=$("fmodel").value, F=FORKS[m], tr=forkTravels(m);
+  const want=keepTravel??DEF.fork;
+  const t=tr.includes(want)?want:tr.reduce((a,b)=>Math.abs(b-want)<Math.abs(a-want)?b:a);
+  seg("fork","fork",tr.map(f=>[f,f]),t);
+  const custom=m==="custom";
+  $("offset").hidden=custom; $("offsetCustom").hidden=!custom;
+  if(!custom){
+    const prev=+$("offset").value||44;
+    $("offset").innerHTML=F.offsets.map(o=>`<option>${o}</option>`).join("");
+    $("offset").value=F.offsets.includes(prev)?prev:F.offsets[0];
+  }
+  $("a2c").readOnly=!custom;
+  $("travelAvail").textContent=custom?"":`${F.short}: ${tr[0]}–${tr[tr.length-1]} mm`;
+}
+buildForkControls(DEF.fork);
 
 function state(){
-  return {model:val("model"),size:val("size"),ext:val("ext"),horst:val("horst"),cup:+val("cup"),fork:+val("fork"),a2c:+$("a2c").value,offset:+$("offset").value};
+  return {model:val("model"),size:val("size"),ext:val("ext"),horst:val("horst"),cup:+val("cup"),fork:+val("fork"),fmodel:$("fmodel").value,a2c:+$("a2c").value,
+    offset:$("fmodel").value==="custom"?+$("offsetCustom").value:+$("offset").value};
 }
-function autoA2C(s){ // A2C grows 1:1 with travel; anchored to the size's stock fork
-  const i=SIZES.indexOf(s.size); return STD.a2c[i]+(s.fork-STD.fork[i]);
+function autoA2C(s){ // published A2C for the chosen fork and travel
+  if(s.fmodel==="spec"){const i=SIZES.indexOf(s.size); return STD.a2c[i]+(s.fork-STD.fork[i]);}
+  return FORKS[s.fmodel].a2c[s.fork];
 }
 function compute(s){
   const i=SIZES.indexOf(s.size), evo=s.ext==="evo", B=evo?EVO:STD;
@@ -268,13 +313,13 @@ function compute(s){
 }
 function isChart(s){
   const i=SIZES.indexOf(s.size);
-  if(s.horst!=="short"||s.cup!==0||s.offset!==44||s.ext==="high")return false;
+  if(s.fmodel!=="spec"||s.horst!=="short"||s.cup!==0||s.offset!==44||s.ext==="high")return false;
   const B=s.ext==="evo"?EVO:STD; return s.fork===B.fork[i]&&s.a2c===B.a2c[i];
 }
 const ROWS=[
  ["ha","Head angle","°",1],["sta","Seat angle (effective)","°",1],["reach","Reach","mm",0],
  ["stack","Stack","mm",0],["bb","BB height","mm",0],["drop","BB drop","mm",0],["cs","Chainstay","mm",0],
- ["wb","Wheelbase","mm",0],["fc","Front center","mm",0],["trail","Trail","mm",0],["a2c","Fork axle-to-crown","mm",0],
+ ["wb","Wheelbase","mm",0],["fc","Front center","mm",0],["trail","Trail","mm",0],["a2c","Fork axle-to-crown","mm",1],["offset","Fork offset","mm",0],
  ["front","Fork travel","mm",0],["rear","Rear travel","mm",0]];
 const fmt=(v,p)=>Number(v).toFixed(p);
 function delta(a,b,p){
@@ -287,10 +332,14 @@ function render(){
   // S1 is Levo 4 alloy only: no EVO bike, no EVO extension
   $("ext-evo").disabled=s.size==="S1"; $("model-evo").disabled=s.size==="S1";
   if(s.size==="S1"&&(s.ext==="evo"||s.model==="evo")){$("ext-low").checked=true; $("model-levo").checked=true; return render()}
-  if(!a2cManual){$("a2c").value=autoA2C(s); s.a2c=+$("a2c").value}
+  if(s.fmodel!=="custom"){$("a2c").value=autoA2C(s); s.a2c=+$("a2c").value}
+  if(!(s.a2c>0)){s.a2c=lastA2C; $("a2c").value=lastA2C}
+  if(!(s.offset>0)){s.offset=lastOffset; $("offsetCustom").value=lastOffset}
+  lastA2C=s.a2c; lastOffset=s.offset;
   const r=compute(s);
   const sb=s.model==="evo"?EVO:STD, sbName=s.model==="evo"?"Levo 4 EVO":"Levo 4";
   const base=compute({size:s.size,...STOCK_SET[s.model],fork:sb.fork[i],a2c:sb.a2c[i]});
+  const F=FORKS[s.fmodel];
   $("vsHead").textContent="vs stock"; $("baseHead").textContent="Stock";
   $("modelHint").textContent=s.model==="evo"
     ?"Compares against the EVO as Specialized ships it: EVO extension, 230×62.5 shock, 180 mm fork. Your settings below stay as they are; Reset to stock loads the EVO's."
@@ -299,15 +348,16 @@ function render(){
   $("travelNote").textContent=s.ext==="evo"?"170 mm rear":"150 mm rear";
   $("extHint").textContent=s.ext==="evo"?"EVO extension (S256300003) with a 230×62.5 standard-eye shock. No High/Low setting. Not available on S1."
     :s.ext==="high"?"High raises the BB 6 mm and steepens the frame 0.4°.":"Stock Levo 4 setting. 210×55 shock, 150 mm rear travel.";
-  $("a2cHint").textContent=a2cManual?"Custom axle-to-crown. Pick a travel to return to the automatic value."
-    :`Auto: ${STD.a2c[i]} mm at ${STD.fork[i]} mm travel, +1 mm per mm of travel. Type your fork's real A2C to override.`;
+  const dStock=s.a2c-sb.a2c[i];
+  $("a2cHint").textContent=F.note+(s.fmodel==="spec"?"":` ${fmt(Math.abs(dStock),1)} mm ${dStock>=0?"taller":"shorter"} than the stock ${sbName}'s chart fork.`);
   const w=[];
   if(s.fork>180)w.push("Specialized rates the Levo 4 frame for forks up to 180 mm.");
   if(s.ext==="evo"&&s.fork<180)w.push("Specialized pairs the EVO extension with a 180 mm fork.");
+  if(s.fmodel==="custom"&&(s.a2c<520||s.a2c>640))w.push("That axle-to-crown is outside the range of any 29\" single-crown fork; check the number.");
   $("forkWarn").hidden=!w.length; $("forkWarn").textContent=w.join(" ");
   const conv=s.model==="levo"&&s.ext==="evo"?" → EVO extension":s.model==="evo"&&s.ext!=="evo"?" → standard extension":"";
   const cupT={"-1":"−1° cup","0":"neutral cup","1":"+1° cup"}[s.cup];
-  $("config").innerHTML=[sbName+conv,s.size,s.ext==="evo"?"EVO link":(s.ext==="high"?"High chip":"Low chip"),`${s.horst} stays`,cupT,`${s.fork} fork`]
+  $("config").innerHTML=[sbName+conv,s.size,s.ext==="evo"?"EVO link":(s.ext==="high"?"High chip":"Low chip"),`${s.horst} stays`,cupT,`${F.short}${s.fmodel==="custom"?"":" "+s.fork}`]
     .map(c=>`<span class="chip">${c}</span>`).join("")+`<span class="chip src">${chart?"Specialized chart":"Calculated"}</span>`;
   const hero=[["ha","Head angle","°",1],["reach","Reach","mm",0],["bb","BB height","mm",0],["cs","Chainstay","mm",0]];
   $("sticky").innerHTML=hero.map(([k,l,u,p])=>`<div><small>${l}</small><b>${fmt(r[k],p)}</b><i>${delta(r[k],base[k],p)}</i></div>`).join("");
@@ -317,13 +367,18 @@ function render(){
 }
 function applyStock(m){
   for(const [n,v] of Object.entries(STOCK_SET[m])){const el=document.getElementById(`${n}-${v}`); if(el)el.checked=true}
-  $("offset").value=STOCK_SET[m].offset; a2cManual=false;
+  $("fmodel").value=STOCK_SET[m].fmodel; buildForkControls(STOCK_SET[m].fork); $("offset").value=STOCK_SET[m].offset;
 }
 $("form").addEventListener("change",e=>{
-  if(e.target.name==="fork"||e.target.name==="size")a2cManual=false;
+  if(e.target.id==="fmodel"){
+    const keep=+val("fork");
+    if(e.target.value==="custom"){$("a2c").value=lastA2C; $("offsetCustom").value=lastOffset}
+    buildForkControls(keep);
+  }
   render();
 });
-$("a2c").addEventListener("input",()=>{a2cManual=true; render()});
+$("a2c").addEventListener("input",()=>{if($("fmodel").value==="custom")render()});
+$("offsetCustom").addEventListener("input",render);
 $("form").addEventListener("submit",e=>e.preventDefault());
 $("reset").addEventListener("click",()=>{applyStock(val("model")); render()});
 render();
