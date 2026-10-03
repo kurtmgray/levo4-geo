@@ -170,7 +170,7 @@ td.d{font-size:.82rem}
       <div>
         <dt>Stock baselines</dt>
         <dd>The stock Levo 4 and Levo 4 EVO numbers come straight from Specialized's user manual. A setup that matches one exactly is tagged "Specialized chart." Everything else is calculated from there.</dd>
-        <dd>A Levo 4 with the EVO extension counts as a conversion and is compared against the stock Levo 4.</dd>
+        <dd>Switching the stock bike changes only what you're compared against; your settings stay. Use Reset to stock to load that bike's stock settings. A Levo 4 with the EVO extension is compared against the stock Levo 4.</dd>
       </div>
       <div>
         <dt>Chips and cups</dt>
@@ -293,8 +293,8 @@ function render(){
   const base=compute({size:s.size,...STOCK_SET[s.model],fork:sb.fork[i],a2c:sb.a2c[i]});
   $("vsHead").textContent="vs stock"; $("baseHead").textContent="Stock";
   $("modelHint").textContent=s.model==="evo"
-    ?"Compares against the EVO as Specialized ships it: EVO extension, 230×62.5 shock, 180 mm fork, 170/180 travel."
-    :"Compares against the Levo 4 as Specialized ships it: Low chip, 210×55 shock, 160 mm fork, 150/160 travel. Pick the EVO extension below to see a converted Levo.";
+    ?"Compares against the EVO as Specialized ships it: EVO extension, 230×62.5 shock, 180 mm fork. Your settings below stay as they are; Reset to stock loads the EVO's."
+    :"Compares against the Levo 4 as Specialized ships it: Low chip, 210×55 shock, 160 mm fork. Your settings below stay as they are; Reset to stock loads the Levo 4's.";
   const chart=isChart(s);
   $("travelNote").textContent=s.ext==="evo"?"170 mm rear":"150 mm rear";
   $("extHint").textContent=s.ext==="evo"?"EVO extension (S256300003) with a 230×62.5 standard-eye shock. No High/Low setting. Not available on S1."
@@ -305,9 +305,9 @@ function render(){
   if(s.fork>180)w.push("Specialized rates the Levo 4 frame for forks up to 180 mm.");
   if(s.ext==="evo"&&s.fork<180)w.push("Specialized pairs the EVO extension with a 180 mm fork.");
   $("forkWarn").hidden=!w.length; $("forkWarn").textContent=w.join(" ");
-  const conv=s.model==="levo"&&s.ext==="evo";
+  const conv=s.model==="levo"&&s.ext==="evo"?" → EVO extension":s.model==="evo"&&s.ext!=="evo"?" → standard extension":"";
   const cupT={"-1":"−1° cup","0":"neutral cup","1":"+1° cup"}[s.cup];
-  $("config").innerHTML=[sbName+(conv?" → EVO conversion":""),s.size,s.ext==="evo"?"EVO link":(s.ext==="high"?"High chip":"Low chip"),`${s.horst} stays`,cupT,`${s.fork} fork`]
+  $("config").innerHTML=[sbName+conv,s.size,s.ext==="evo"?"EVO link":(s.ext==="high"?"High chip":"Low chip"),`${s.horst} stays`,cupT,`${s.fork} fork`]
     .map(c=>`<span class="chip">${c}</span>`).join("")+`<span class="chip src">${chart?"Specialized chart":"Calculated"}</span>`;
   const hero=[["ha","Head angle","°",1],["reach","Reach","mm",0],["bb","BB height","mm",0],["cs","Chainstay","mm",0]];
   $("sticky").innerHTML=hero.map(([k,l,u,p])=>`<div><small>${l}</small><b>${fmt(r[k],p)}</b><i>${delta(r[k],base[k],p)}</i></div>`).join("");
@@ -320,7 +320,6 @@ function applyStock(m){
   $("offset").value=STOCK_SET[m].offset; a2cManual=false;
 }
 $("form").addEventListener("change",e=>{
-  if(e.target.name==="model")applyStock(e.target.value);
   if(e.target.name==="fork"||e.target.name==="size")a2cManual=false;
   render();
 });
